@@ -130,7 +130,8 @@ def batchnorm(name, bottoms, tops, params, attrs):
     layer_bn.type = "BatchNorm"
     # use_global_stats = 1 at testing phase
     layer_bn.batch_norm_param.use_global_stats = 1
-    layer_bn.batch_norm_param.eps = eval(attrs.get("eps"))
+    # For symbol, esp is 0010000000474974513 by default
+    layer_bn.batch_norm_param.eps = eval(attrs.get("eps", "0.0010000000474974513"))
     # mean and var
     layer_bn.blobs.extend([
         _as_blob(mean),
@@ -269,6 +270,28 @@ def softmax(name, bottoms, tops, params, attrs):
     return _link(layer, name, bottoms, tops)
 
 
+def transpose(name, bottoms, tops, params, attrs):
+    layer = pb2.LayerParameter()
+    layer.type = 'Permute'
+
+    orders = eval(attrs['axes'])
+    layer.permute_param.order.extend(orders)
+
+    return _link(layer, name, bottoms, tops)
+
+
+def reshape(name, bottoms, tops, params, attrs):
+    layer = pb2.LayerParameter()
+    layer.type = 'Reshape'
+
+    shape = eval(attrs["shape"])
+    layer.reshape_param.shape.dim.extend(shape)
+
+    return _link(layer, name, bottoms, tops)
+
+    print(attrs)
+
+
 def build_converters():
     return {
         "data": data,
@@ -281,5 +304,7 @@ def build_converters():
         "Flatten": flatten,
         "Concat": concat,
         "Dropout": dropout,
-        "softmax": softmax
+        "softmax": softmax,
+        "transpose": transpose,
+        "Reshape": reshape
     }

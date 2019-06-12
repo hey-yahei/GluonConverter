@@ -14,6 +14,8 @@ Convert MXNet-Gluon model to Caffe.
 * `Concat` -> `Concat`
 * `Dropout` -> `Dropout`
 * `softmax` -> `Softmax`
+* `transpose` -> `Permute` (caffe-ssd)
+* `Reshape` -> `Reshape` (caffe-ssd)
 
 ## Usage
 1. Construct your gluon model, for example     
