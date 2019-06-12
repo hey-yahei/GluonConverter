@@ -30,7 +30,10 @@ import os
 from google.protobuf import text_format
 
 from .convert_caffe_layer import build_converters
-from . import caffe_pb2 as pb2
+try:
+    from .caffe_ssd import caffe_pb2 as pb2
+except:
+    from .caffe_bvlc import caffe_pb2 as pb2
 
 __all__ = ['convert_model', 'save_model']
 __author__ = 'YaHei'

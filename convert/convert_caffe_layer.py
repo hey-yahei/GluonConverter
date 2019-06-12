@@ -23,7 +23,11 @@
 # SOFTWARE.
 # ============================================================================
 
-from . import caffe_pb2 as pb2
+try:
+    from .caffe_ssd import caffe_pb2 as pb2
+except:
+    from .caffe_bvlc import caffe_pb2 as pb2
+
 import numpy as np
 
 __all__ = ['build_converters']
