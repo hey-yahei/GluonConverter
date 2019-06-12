@@ -5,7 +5,9 @@ Convert MXNet-Gluon model to Caffe.
 * `Convolution` -> `Convolution`
 * `BatchNorm` -> `BatchNorm` & `Scale`
 * `Activation` (relu only) -> `ReLU`
-* `Pooling` -> `Pooling` (MAX/AVG)
+* `Pooling` -> `Pooling` (MAX/AVG)       
+    Note that computations of Pooling layer are so diffirent between Gluon and Caffe which may cause a large error.   
+    But for **Global Pooling** layer, it is consistent.    
 * `elemwise_add` -> `Eltwise` (ADD)
 * `FullyConnected` -> `InnerProduct`
 * `Flatten` -> `Flatten`

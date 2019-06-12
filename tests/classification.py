@@ -1,7 +1,8 @@
 #-*- coding: utf-8 -*-
 
 import caffe
-from mxnet import nd
+from mxnet import nd, image
+from mxnet.gluon.data.vision import transforms as T
 from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0
 
 import os
@@ -27,7 +28,16 @@ def generate_caffe_model():
 
 
 def test(Net, input_shape=(1,3,224,224)):
-    input_ = np.random.uniform(size=input_shape)
+    # input_ = np.random.uniform(size=input_shape)
+    assert input_shape == (1,3,224,224)
+    transformer = T.Compose([
+        T.Resize(256, keep_ratio=True),
+        T.CenterCrop(224),
+        T.ToTensor(),
+        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    input_ = image.imread("images/test.jpeg")
+    input_ = transformer(input_).reshape(*input_shape).asnumpy()
 
     caffe_net = caffe.Net(f"tmp/{Net.__name__}.prototxt", f"tmp/{Net.__name__}.caffemodel", caffe.TEST)
     caffe_net.blobs['data'].reshape(*input_shape)
@@ -59,6 +69,6 @@ if __name__ == "__main__":
         print(k)
         print("Diff abs_max:", v[0])
         print("Diff abs_mean:", v[1])
-        print(f"Top5: {v[2]}/5")
-        print("Top1:", v[3])
+        print(f"Top5 match: {v[2]}/5")
+        print(f"Top1 match: {int(v[3])}/1")
         print()
