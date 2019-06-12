@@ -263,6 +263,12 @@ def dropout(name, bottoms, tops, params, attrs):
     return _link(layer, name, bottoms, tops)
 
 
+def softmax(name, bottoms, tops, params, attrs):
+    layer = pb2.LayerParameter()
+    layer.type = 'Softmax'
+    return _link(layer, name, bottoms, tops)
+
+
 def build_converters():
     return {
         "data": data,
@@ -274,5 +280,6 @@ def build_converters():
         "FullyConnected": fully_connected,
         "Flatten": flatten,
         "Concat": concat,
-        'Dropout': dropout
+        "Dropout": dropout,
+        "softmax": softmax
     }

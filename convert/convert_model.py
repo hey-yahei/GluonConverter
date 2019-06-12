@@ -120,7 +120,7 @@ def convert_model(net, input_shape=(1,3,224,224), softmax=False):
     input_ = symbol.Variable("data", shape=input_shape)
     sym = net(input_)
     if softmax:
-        sym = symbol.SoftmaxOutput(sym)
+        sym = symbol.softmax(sym)
 
     """ Convert data layer """
     convert_fn = _converter.get("data")

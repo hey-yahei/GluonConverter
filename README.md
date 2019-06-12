@@ -13,6 +13,7 @@ Convert MXNet-Gluon model to Caffe.
 * `Flatten` -> `Flatten`
 * `Concat` -> `Concat`
 * `Dropout` -> `Dropout`
+* `softmax` -> `Softmax`
 
 ## Usage
 1. Construct your gluon model, for example     

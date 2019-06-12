@@ -9,10 +9,11 @@ import os
 import numpy as np
 
 results = {}
+# model_zoo = [mobilenet1_0]    # test
 model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0]
 
 
-def generate_caffe_model():
+def generate_caffe_model(softmax=False):
     import sys
     sys.path.append("..")
     from convert import convert_model, save_model
@@ -23,11 +24,11 @@ def generate_caffe_model():
     for Net in model_zoo:
         print("Generate caffe model for", Net.__name__)
         net = Net(pretrained=True)
-        text_net, binary_weights = convert_model(net)
+        text_net, binary_weights = convert_model(net, softmax=softmax)
         save_model(text_net, binary_weights, f"tmp/{Net.__name__}")
 
 
-def test(Net, input_shape=(1,3,224,224)):
+def test(Net, input_shape=(1,3,224,224), softmax=False):
     # input_ = np.random.uniform(size=input_shape)
     assert input_shape == (1,3,224,224)
     transformer = T.Compose([
@@ -45,7 +46,10 @@ def test(Net, input_shape=(1,3,224,224)):
     caffe_out = list(caffe_net.forward().values())[0]
 
     gluon_net = Net(pretrained=True)
-    gluon_out = gluon_net(nd.array(input_)).asnumpy()
+    gluon_out = gluon_net(nd.array(input_))
+    if softmax:
+        gluon_out = nd.softmax(gluon_out)
+    gluon_out = gluon_out.asnumpy()
 
     caffe_top5 = np.argsort(caffe_out)[0][-5:]
     gluon_top5 = np.argsort(gluon_out)[0][-5:]
@@ -53,22 +57,28 @@ def test(Net, input_shape=(1,3,224,224)):
     gluon_top1 = gluon_top5[-1]
     top5 = np.intersect1d(caffe_top5, gluon_top5).size
     top1 = caffe_top1 == gluon_top1
-    diff = (gluon_out - caffe_out) / (gluon_out + 1e-10)
-    diff = abs(diff)
-    results[Net.__name__] = (np.max(diff), np.mean(diff), top5, top1)
+    absolute_diff = abs(gluon_out - caffe_out)
+    relative_diff = (gluon_out - caffe_out) / (gluon_out + 1e-10)
+    relative_diff = abs(relative_diff)
+    results[Net.__name__] = (np.max(absolute_diff), np.mean(absolute_diff),
+                             np.max(relative_diff), np.mean(relative_diff),
+                             top5, top1)
 
 
 
 if __name__ == "__main__":
-    generate_caffe_model()
+    softmax_ = True
+    generate_caffe_model(softmax=softmax_)
 
     for Net in model_zoo:
-        test(Net)
+        test(Net, softmax=softmax_)
 
     for k, v in results.items():
         print(k)
-        print("Diff abs_max:", v[0])
-        print("Diff abs_mean:", v[1])
-        print(f"Top5 match: {v[2]}/5")
-        print(f"Top1 match: {int(v[3])}/1")
+        print("Absolute Difference(abs_max):", v[0])
+        print("Absolute Difference(abs_mean):", v[1])
+        print("Relative Difference(abs_max):", v[2])
+        print("Relative Difference(abs_mean):", v[3])
+        print("Top5 match:", f"{v[4]}/5")
+        print("Top1 match:", f"{int(v[5])}/1")
         print()
