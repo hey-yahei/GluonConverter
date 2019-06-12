@@ -116,14 +116,17 @@ def convert_model(net, input_shape=(1,3,224,224), softmax=False):
     """
     # A list to collect layers
     caffe_net = []
+    # A list to collect visited symbols
+    visited = []
     # Parameters from gluon model
     gluon_params = net.collect_params()
 
     """ Generate symbol model """
     input_ = symbol.Variable("data", shape=input_shape)
-    sym = net(input_)
+    syms = net(input_)
     if softmax:
-        sym = symbol.softmax(sym)
+        assert type(syms) != tuple
+        syms = symbol.softmax(syms)
 
     """ Convert data layer """
     convert_fn = _converter.get("data")
@@ -131,36 +134,43 @@ def convert_model(net, input_shape=(1,3,224,224), softmax=False):
     caffe_net.append(layer)
 
     """ Convert other layers """
-    node_ops = _extract_node_ops(sym)
-    for node in sym.get_internals():
-        # Basic attributes: name & op
-        name = node.name
-        op = node_ops[name]
-        # Collect all children: inputs and parameters
-        in_sym = node.get_children()
-        if in_sym is None:  # data layer
-            continue
-        # Collectors for bottoms and parameters
-        bottoms = []
-        params = []
-        for s in in_sym:
-            s_name = s.name
-            if s_name != 'data' and node_ops[s_name] == 'null':     # Parameters
-                params.append(gluon_params[s_name].data().asnumpy())
-            else:   # Inputs
-                bottoms.append(_clean_name(net, s_name))
-        # Collector for tops
-        tops = [_clean_name(net, out_name) for out_name in node.list_outputs()]
-        # Get convert function
-        convert_fn = _converter.get(op, None)
-        assert convert_fn is not None, f"unknwon op: {op}"
-        # Convert gluon layer to caffe and add to collector `caffe_net`
-        attrs = node.list_attr()
-        layer = convert_fn(_clean_name(net, name), bottoms, tops, params, attrs)
-        if op == "BatchNorm":       # BatchNorm is converted into BatchNorm & Scale
-            caffe_net.extend(layer)
-        else:   # Other layers
-            caffe_net.append(layer)
+    if type(syms) != tuple:
+        syms = (syms, )
+    for sym in syms:
+        node_ops = _extract_node_ops(sym)
+        for node in sym.get_internals():
+            if node.name in visited:
+                # print(f"ignore symbol {node.name}")
+                continue
+            visited.append(node.name)
+            # Basic attributes: name & op
+            name = node.name
+            op = node_ops[name]
+            # Collect all children: inputs and parameters
+            in_sym = node.get_children()
+            if in_sym is None:  # data layer
+                continue
+            # Collectors for bottoms and parameters
+            bottoms = []
+            params = []
+            for s in in_sym:
+                s_name = s.name
+                if s_name != 'data' and node_ops[s_name] == 'null':     # Parameters
+                    params.append(gluon_params[s_name].data().asnumpy())
+                else:   # Inputs
+                    bottoms.append(_clean_name(net, s_name))
+            # Collector for tops
+            tops = [_clean_name(net, out_name) for out_name in node.list_outputs()]
+            # Get convert function
+            convert_fn = _converter.get(op, None)
+            assert convert_fn is not None, f"unknwon op: {op}"
+            # Convert gluon layer to caffe and add to collector `caffe_net`
+            attrs = node.list_attr()
+            layer = convert_fn(_clean_name(net, name), bottoms, tops, params, attrs)
+            if op == "BatchNorm":       # BatchNorm is converted into BatchNorm & Scale
+                caffe_net.extend(layer)
+            else:   # Other layers
+                caffe_net.append(layer)
 
     """ Set ReLU & BatchNorm inplace """
     _in_place(caffe_net)

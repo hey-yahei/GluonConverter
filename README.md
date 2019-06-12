@@ -1,22 +1,6 @@
 # Gluon Converter
 Convert MXNet-Gluon model to Caffe.
 
-## Supported Layers
-* `Convolution` -> `Convolution`
-* `BatchNorm` -> `BatchNorm` & `Scale`
-* `Activation` (relu only) -> `ReLU`
-* `Pooling` -> `Pooling` (MAX/AVG)       
-    Note that computations of Pooling layer are so diffirent between Gluon and Caffe which may cause a large error.   
-    But for **Global Pooling** layer, it is consistent.    
-* `elemwise_add` -> `Eltwise` (ADD)
-* `FullyConnected` -> `InnerProduct`
-* `Flatten` -> `Flatten`
-* `Concat` -> `Concat`
-* `Dropout` -> `Dropout`
-* `softmax` -> `Softmax`
-* `transpose` -> `Permute` (caffe-ssd)
-* `Reshape` -> `Reshape` (caffe-ssd)
-
 ## Usage
 1. Construct your gluon model, for example     
     ```python
@@ -33,3 +17,19 @@ Convert MXNet-Gluon model to Caffe.
     from convert import save_model
     save_model(text_net, binary_weights, prefix="tmp/resnet18_v1")
     ``` 
+
+## Support Layers
+* `Convolution` -> `Convolution`
+* `BatchNorm` -> `BatchNorm` & `Scale`
+* `Activation` (relu only) -> `ReLU`
+* `Pooling` -> `Pooling` (MAX/AVG)       
+    Note that computations of Pooling layer are so diffirent between Gluon and Caffe which may cause a large error.   
+    But for **Global Pooling** layer, it is consistent.    
+* `elemwise_add` -> `Eltwise` (ADD)
+* `FullyConnected` -> `InnerProduct`
+* `Flatten` -> `Flatten`
+* `Concat` -> `Concat`
+* `Dropout` -> `Dropout`
+* `softmax` -> `Softmax`
+* `transpose` -> `Permute` (caffe-ssd)
+* `Reshape` -> `Reshape` (caffe-ssd)
