@@ -1,5 +1,7 @@
 #-*- coding: utf-8 -*-
 
+from mxnet import image, nd
+
 from models.ssd import SSD_SETTINGS, ssd_512_mobilenet1_0_voc
 
 import sys
@@ -63,11 +65,23 @@ def generate_model():
 
 def test():
     import sys
-    sys.path.insert(0, "/home/yahei/tmp/docker_share/caffe/python")
+    sys.path.insert(0, "/home/docker_share/caffe-ssd/python")
     import caffe   # caffe-ssd
     net = caffe.Net("tmp/mssd512_voc.prototxt", "tmp/mssd512_voc.caffemodel", caffe.TEST)
 
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    input_ = image.imread("images/2012_000003.jpg")
+    input_ = image.imresize(input_, 512, 512)
+    input_ = nd.image.to_tensor(input_)
+    input_ = nd.image.normalize(input_, mean=mean, std=std)
+
+    net.blobs['data'].reshape(1,3,512,512)
+    net.blobs['data'].data[...] = input_.reshape(1,3,512,512).asnumpy()
+    out = net.forward()
+    print(out)
+
 
 if __name__ == "__main__":
-    # generate_model()
-    test()
+    generate_model()
+    # test()

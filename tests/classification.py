@@ -37,7 +37,7 @@ def test(Net, input_shape=(1,3,224,224), softmax=False):
         T.ToTensor(),
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    input_ = image.imread("images/test.jpeg")
+    input_ = image.imread("images/ILSVRC2012_val_00000293.jpeg")
     input_ = transformer(input_).reshape(*input_shape).asnumpy()
 
     caffe_net = caffe.Net(f"tmp/{Net.__name__}.prototxt", f"tmp/{Net.__name__}.caffemodel", caffe.TEST)
