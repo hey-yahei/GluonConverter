@@ -91,7 +91,7 @@ def detection_out(name, bottoms, top,
 
     layer.detection_output_param.num_classes = num_classes
     layer.detection_output_param.share_location = True
-    layer.detection_output_param.background_label_id = num_classes - 1   # The last class
+    layer.detection_output_param.background_label_id = 0   # The firse class
     layer.detection_output_param.nms_param.nms_threshold = nms_th
     layer.detection_output_param.nms_param.top_k = nms_topk
     layer.detection_output_param.code_type = 2    # CENTER_SIZE
