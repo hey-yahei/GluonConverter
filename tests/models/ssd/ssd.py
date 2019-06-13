@@ -191,7 +191,7 @@ class SSD(HybridBlock):
         # anchors = [F.reshape(ag(feat), shape=(1, -1))
         #            for feat, ag in zip(features, self.anchor_generators)]
         cls_preds = F.concat(*cls_preds, dim=1).reshape((0, -1, self.num_classes + 1))
-        box_preds = F.concat(*box_preds, dim=1).reshape((0, -1, 4))
+        box_preds = F.concat(*box_preds, dim=1)#.reshape((0, -1, 4))
         cls_preds = F.flatten( F.softmax(cls_preds, axis=2) )
         return cls_preds, box_preds
 

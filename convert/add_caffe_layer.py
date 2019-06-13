@@ -41,7 +41,7 @@ def _link(layer, name, bottoms, tops):
 
 def priorbox(name, bottom, top,
              min_size=[], max_size=[], aspect_ratio=[], flip=False, clip=False,
-             variance=(0.1, 0.1, 0.2, 0.2), img_size=[0, 0], step=[], offset=0.5):
+             variance=(0.1, 0.1, 0.2, 0.2), img_size=0, step=[], offset=0.5):
     if type(min_size) in (int, float):
         min_size = (min_size, )
     if type(max_size) in (int, float):
@@ -68,10 +68,12 @@ def priorbox(name, bottom, top,
     layer.prior_box_param.flip = flip
     layer.prior_box_param.clip = clip
     if len(img_size) == 1:
-        layer.prior_box_param.img_size = img_size[0]
+        if img_size[0] != 0:
+            layer.prior_box_param.img_size = img_size[0]
     else:
-        layer.prior_box_param.img_h = img_size[0]
-        layer.prior_box_param.img_w = img_size[1]
+        if img_size[0] != 0 and img_size[1] != 0:
+            layer.prior_box_param.img_h = img_size[0]
+            layer.prior_box_param.img_w = img_size[1]
     if len(step) == 1:
         layer.prior_box_param.step = step[0]
     else:

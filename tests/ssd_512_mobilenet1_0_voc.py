@@ -8,7 +8,7 @@ from convert import convert_model_to_layers, layers_to_caffenet, save_model
 from convert.add_caffe_layer import priorbox, detection_out
 from convert.convert_caffe_layer import concat
 
-if __name__ == "__main__":
+def generate_model():
     net = ssd_512_mobilenet1_0_voc()
     net.load_parameters("tmp/ssd_512_mobilenet1.0_voc-37c18076.params", ignore_extra=True)
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         "expand_conv2",
         "expand_conv3"
     )
-    locations = "reshape1"
+    locations = "concat1"
     confidences = "flatten12"
 
     caffe_net = normal_layers
@@ -60,3 +60,14 @@ if __name__ == "__main__":
     text_net, binary_weights = layers_to_caffenet(caffe_net)
     save_model(text_net, binary_weights, prefix="tmp/mssd512_voc")
 
+
+def test():
+    import sys
+    sys.path.insert(0, "/home/yahei/tmp/docker_share/caffe/python")
+    import caffe   # caffe-ssd
+    net = caffe.Net("tmp/mssd512_voc.prototxt", "tmp/mssd512_voc.caffemodel", caffe.TEST)
+
+
+if __name__ == "__main__":
+    # generate_model()
+    test()
