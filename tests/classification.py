@@ -3,14 +3,14 @@
 import caffe
 from mxnet import nd, image
 from mxnet.gluon.data.vision import transforms as T
-from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0
+from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn
 
 import os
 import numpy as np
 
 results = {}
-# model_zoo = [mobilenet1_0]    # test
-model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0]
+# model_zoo = [resnet18_v1]    # test
+model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn]
 
 
 def generate_caffe_model(softmax=False):
@@ -63,7 +63,6 @@ def test(Net, input_shape=(1,3,224,224), softmax=False):
     results[Net.__name__] = (np.max(absolute_diff), np.mean(absolute_diff),
                              np.max(relative_diff), np.mean(relative_diff),
                              top5, top1)
-
 
 
 if __name__ == "__main__":
