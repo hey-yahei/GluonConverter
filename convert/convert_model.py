@@ -27,6 +27,7 @@ from mxnet import symbol
 
 import json
 import os
+import numpy as np
 from google.protobuf import text_format
 
 from .convert_caffe_layer import build_converters
@@ -39,6 +40,14 @@ __all__ = ['convert_model', 'save_model', 'convert_model_to_layers', 'layers_to_
 __author__ = 'YaHei'
 
 _converter = build_converters()
+
+
+def _weights_rgb2bgr(weights):
+    assert weights.shape[1] == 3
+    r = weights[:, 0, :, :]
+    g = weights[:, 1, :, :]
+    b = weights[:, 2, :, :]
+    return np.stack((b, g, r), axis=1)
 
 
 def _extract_node_ops(sym):
@@ -105,7 +114,7 @@ def _in_place(caffe_net):
                 node.top[i] = renames[t]
 
 
-def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False):
+def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
     """
     Convert Gluon model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock
@@ -114,6 +123,8 @@ def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False):
         Shape of inputs.
     :param softmax: bool
         Add softmax for model.
+    :param to_bgr: bool
+        Convert input_type from RGB to BGR.
     :return: list of caffe_pb2.LayerParameter
         CaffeLayers from model.
     """
@@ -162,6 +173,10 @@ def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False):
                     params.append(gluon_params[s_name].data().asnumpy())
                 else:   # Inputs
                     bottoms.append(_clean_name(net, s_name))
+            # To bgr for first layer
+            if all((to_bgr, op in ("Convolution", "FullyConnected"), "data" in bottoms)):
+                print("To BGR:", node.name)
+                params[0] = _weights_rgb2bgr(params[0])
             # Collector for tops
             tops = [_clean_name(net, out_name) for out_name in node.list_outputs()]
             # Get convert function
@@ -212,7 +227,7 @@ def layers_to_caffenet(caffe_net):
     return text_net, binary_weights
 
 
-def convert_model(net, input_shape=(1,3,224,224), softmax=False):
+def convert_model(net, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
     """
     Convert Gluon model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock
@@ -221,13 +236,15 @@ def convert_model(net, input_shape=(1,3,224,224), softmax=False):
         Shape of inputs.
     :param softmax: bool
         Add softmax for model.
+    :param to_bgr: bool
+        Convert input_type from RGB to BGR.
     :return: (text_net, binary_weights)
         text_net: caffe_pb2.NetParameter
             Structure of net.
         binary_weights: caffe_pb2.NetParameter
             Weights of net.
     """
-    caffe_net = convert_model_to_layers(net, input_shape, softmax)
+    caffe_net = convert_model_to_layers(net, input_shape, softmax, to_bgr)
     return layers_to_caffenet(caffe_net)
 
 

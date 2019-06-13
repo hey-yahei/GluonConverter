@@ -14,7 +14,7 @@ def generate_model():
     net = ssd_512_mobilenet1_0_voc()
     net.load_parameters("tmp/ssd_512_mobilenet1.0_voc-37c18076.params", ignore_extra=True)
 
-    normal_layers = convert_model_to_layers(net, input_shape=(1,3,512,512))
+    normal_layers = convert_model_to_layers(net, input_shape=(1,3,512,512), to_bgr=True)
 
     # save_model( *layers_to_caffenet(normal_layers), prefix="tmp/mssd512_voc" )
     features_tops = (  # features_tops is extracted from the noraml_layer model above
