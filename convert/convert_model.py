@@ -66,6 +66,11 @@ def _clean_name(net, name):
     return name
 
 
+def _single_top_node(caffe_net, name):
+    return len([node for node in caffe_net
+                    if name in node.bottom and node.bottom != node.top]) == 1
+
+
 def _in_place(caffe_net):
     """ Set some layer as in_place mode(reset top_name). """
     in_place_types = ("BatchNorm", "ReLU")
@@ -85,8 +90,9 @@ def _in_place(caffe_net):
             # recursion to find the top node in collection
             while bottom in renames:
                 bottom = renames[bottom]
+            node.bottom[0] = bottom
             # rename tops
-            if bottom != "data" and get_op(bottom) not in ("Eltwise", "Pooling"): # so ugly !!!
+            if bottom != "data" and _single_top_node(caffe_net, bottom):
                 node.top[0] = renames[top] = bottom
 
     """ Second traversal: rename bottoms and other tops """
@@ -116,7 +122,7 @@ def convert_model(net, input_shape=(1,3,224,224), softmax=False):
     """
     # A list to collect layers
     caffe_net = []
-    # A list to collect visited symbols
+    # A list to collect names of visited symbols
     visited = []
     # Parameters from gluon model
     gluon_params = net.collect_params()
