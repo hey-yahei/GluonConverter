@@ -271,6 +271,9 @@ def dropout(name, bottoms, tops, params, attrs):
 def softmax(name, bottoms, tops, params, attrs):
     layer = pb2.LayerParameter()
     layer.type = 'Softmax'
+
+    layer.softmax_param.axis = int(attrs['axis'])
+
     return _link(layer, name, bottoms, tops)
 
 
