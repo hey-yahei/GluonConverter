@@ -299,6 +299,92 @@ def reshape(name, bottoms, tops, params, attrs):
     print(attrs)
 
 
+# ================= Fake Symbols ================================
+
+# min_size=[], max_size=[], aspect_ratio=[], flip=False, clip=False,
+# variance=(0.1, 0.1, 0.2, 0.2), img_size=0, step=[], offset=0.5):
+
+
+def _priorbox(name, bottoms, tops, params, attrs):
+    def _to_tuple(d):
+        if d is not None:
+            d = eval(d)
+            if type(d) in (int, float):
+                return (d,)
+        return d
+
+    layer = pb2.LayerParameter()
+    layer.type = "PriorBox"
+
+    min_size = _to_tuple(attrs['min_size'])
+    max_size = _to_tuple(attrs['max_size'])
+    assert len(min_size) == len(max_size)
+    layer.prior_box_param.min_size.extend(min_size)
+    layer.prior_box_param.max_size.extend(max_size)
+
+    aspect_ratio = _to_tuple(attrs['aspect_ratio'])
+    layer.prior_box_param.aspect_ratio.extend(aspect_ratio)
+
+    variance = eval(attrs.get("variance", (0.1, 0.1, 0.2, 0.2)))
+    assert len(variance) == 4
+    layer.prior_box_param.variance.extend(variance)
+
+    img_size = _to_tuple(attrs.get('img_size', None))
+    if img_size is not None:
+        assert len(img_size) in (1, 2)
+        if len(img_size) == 1:
+            if img_size[0] != 0:
+                layer.prior_box_param.img_size = img_size[0]
+        else:
+            if img_size[0] != 0 and img_size[1] != 0:
+                layer.prior_box_param.img_h = img_size[0]
+                layer.prior_box_param.img_w = img_size[1]
+
+    step = _to_tuple(attrs.get('step', None))
+    if step is not None:
+        assert len(step) in (1, 2)
+        if len(step) == 1:
+            layer.prior_box_param.step = step[0]
+        else:
+            layer.prior_box_param.step_h = step[0]
+            layer.prior_box_param.step_w = step[1]
+
+    layer.prior_box_param.flip = eval(attrs.get("flip", False))
+    layer.prior_box_param.clip = eval(attrs.get("clip", False))
+    layer.prior_box_param.offset = float(attrs.get("offset", 0.5))
+
+    return _link(layer, name, [bottoms[0], "data"], tops)
+
+
+def _detection_out(name, bottoms, tops, params, attrs):
+    layer = pb2.LayerParameter()
+    layer.type = "DetectionOutput"
+
+    layer.detection_output_param.num_classes = int(attrs['num_classes'])
+    layer.detection_output_param.share_location = eval(attrs.get("share_location", True))
+    layer.detection_output_param.background_label_id = int(attrs.get("background_label", 0))
+    layer.detection_output_param.nms_param.nms_threshold = float(attrs['nms_threshold'])
+    layer.detection_output_param.nms_param.top_k = int(attrs['nms_top_k'])
+    layer.detection_output_param.code_type = int(attrs.get("code_type", 2))    # CENTER_SIZE
+    layer.detection_output_param.keep_top_k = int(attrs['keep_top_k'])
+    layer.detection_output_param.confidence_threshold = float(attrs['confidence_threshold'])
+
+    return _link(layer, name, bottoms, tops)
+
+
+def fake(name, bottoms, tops, params, attrs):
+    # Note that in `attrs`, all values become string type!!
+    assert attrs['op_type'] == "_fake"
+
+    if attrs['_op'] == 'PriorBox':
+        return _priorbox(name, bottoms, tops, params, attrs)
+    elif attrs['_op'] == 'DetectionOutput':
+        return _detection_out(name, bottoms, tops, params, attrs)
+    else:
+        raise ValueError(f"Unknown custom op: {attrs['_op']}")
+
+
+
 def build_converters():
     return {
         "data": data,
@@ -313,5 +399,6 @@ def build_converters():
         "Dropout": dropout,
         "softmax": softmax,
         "transpose": transpose,
-        "Reshape": reshape
+        "Reshape": reshape,
+        "Custom": fake
     }

@@ -24,6 +24,7 @@
 # ============================================================================
 
 from mxnet import symbol
+from mxnet.gluon import nn
 
 import json
 import os
@@ -63,8 +64,8 @@ def _extract_node_ops(sym):
 
 def _clean_name(net, name):
     """ Clear prefix and some suffixes for name """
-    prefix = net._prefix
-    name = name.replace(prefix, "")
+    # prefix = net._prefix
+    # name = name.replace(prefix, "")
     if name.endswith("_fwd_output"):
         name = name[:-len("_fwd_output")]
     elif name.endswith("_fwd"):
@@ -114,7 +115,7 @@ def _in_place(caffe_net):
                 node.top[i] = renames[t]
 
 
-def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
+def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
     """
     Convert Gluon model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock or mxnet.symbol.Symbol or list of mxnet.symbol.Symbol
@@ -136,9 +137,7 @@ def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False, to_bg
     gluon_params = net.collect_params()
 
     """ Generate symbol model """
-    if isinstance(net, (symbol, tuple)):
-        syms = net
-    else:
+    if syms is None:
         input_ = symbol.Variable("data", shape=input_shape)
         syms = net(input_)
         if softmax:
@@ -151,7 +150,7 @@ def convert_model_to_layers(net, input_shape=(1,3,224,224), softmax=False, to_bg
     caffe_net.append(layer)
 
     """ Convert other layers """
-    if type(syms) != tuple:
+    if type(syms) not in(tuple, list):
         syms = (syms, )
     for sym in syms:
         node_ops = _extract_node_ops(sym)
@@ -230,7 +229,7 @@ def layers_to_caffenet(caffe_net):
     return text_net, binary_weights
 
 
-def convert_model(net, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
+def convert_model(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
     """
     Convert Gluon model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock or mxnet.symbol.Symbol or list of mxnet.symbol.Symbol
@@ -247,7 +246,7 @@ def convert_model(net, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
         binary_weights: caffe_pb2.NetParameter
             Weights of net.
     """
-    caffe_net = convert_model_to_layers(net, input_shape, softmax, to_bgr)
+    caffe_net = convert_model_to_layers(net, syms, input_shape, softmax, to_bgr)
     return layers_to_caffenet(caffe_net)
 
 
