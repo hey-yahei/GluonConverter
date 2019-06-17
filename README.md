@@ -33,6 +33,10 @@ Convert MXNet-Gluon model to Caffe.
 
 I've tested the ssd models converted from gluoncv on [caffe-ssd](https://github.com/weiliu89/caffe/tree/ssd) and [ncnn](https://github.com/Tencent/ncnn) and they works well.
 
+### How to convert MobileNetv2?       
+`ReLU6` is one of components in MobileNetv2, which is implemented with a `Activation(ReLU)` symbol and a `clip` symbol. But caffe does not support `clip`. Therefore, to convert MobileNetv2, you can replace all `ReLU6` to `ReLU` as `tests/classification.py` does. And of course, some errors will be introduced especially for quantized-models.      
+However, as I know, some branches of caffe and some platform(such as ncnn) support `ReLU6`, please reset the type of activation layers manually if you want to deploy it to such branches or platforms.
+
 ## Support Layers
 * `Convolution` -> `Convolution`
 * `BatchNorm` -> `BatchNorm` & `Scale`
