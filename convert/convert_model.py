@@ -184,7 +184,7 @@ def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=F
             tops = [_clean_name(net, out_name) for out_name in node.list_outputs()]
             # Get convert function
             convert_fn = _converter.get(op, None)
-            assert convert_fn is not None, f"unknwon op: {op}"
+            assert convert_fn is not None, f"unknown op: {op}"
             # Convert gluon layer to caffe and add to collector `caffe_net`
             attrs = node.list_attr()
             layer = convert_fn(_clean_name(net, name), bottoms, tops, params, attrs)

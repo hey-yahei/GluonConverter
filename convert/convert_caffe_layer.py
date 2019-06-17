@@ -177,10 +177,9 @@ def pooling(name, bottoms, tops, params, attrs):
 
     """ Parse Attributes """
     # pool type
-    pool_type = _pool_type_map[attrs.get("pool_type")]
+    layer.pooling_param.pool = _pool_type_map[attrs.get("pool_type")]
     # global pool
     if attrs.get("global_pool") == "True":
-        layer.pooling_param.pool = pool_type
         layer.pooling_param.global_pooling = 1
         return _link(layer, name, bottoms, tops)
     # others
@@ -202,12 +201,12 @@ def pooling(name, bottoms, tops, params, attrs):
         layer.pooling_param.stride_h = sh
         layer.pooling_param.stride_w = sw
     # padding(ceil_mode => False)
-    assert attrs['pooling_convention'] == 'valid', "Caffe only support Pooling layer with ceil_mode=False"
+    # assert attrs['pooling_convention'] == 'valid', "Caffe only support Pooling layer with ceil_mode=False"
     if ph == pw:
-        layer.pooling_param.pad = ph - 1 if sh > 1 and ph > 0 else ph
+        layer.pooling_param.pad = ph - 1 if all((attrs['pooling_convention'] == 'valid', sh > 1, ph > 0)) else ph
     else:
-        layer.pooling_param.pad_h = ph - 1 if sh > 1 and ph > 0 else ph
-        layer.pooling_param.pad_w = pw - 1 if sw > 1 and pw > 0 else pw
+        layer.pooling_param.pad_h = ph - 1 if all((attrs['pooling_convention'] == 'valid', sh > 1, ph > 0)) else ph
+        layer.pooling_param.pad_w = pw - 1 if all((attrs['pooling_convention'] == 'valid', sh > 1, ph > 0)) else pw
 
     return _link(layer, name, bottoms, tops)
 
@@ -302,11 +301,6 @@ def reshape(name, bottoms, tops, params, attrs):
 
 
 # ================= Fake Symbols ================================
-
-# min_size=[], max_size=[], aspect_ratio=[], flip=False, clip=False,
-# variance=(0.1, 0.1, 0.2, 0.2), img_size=0, step=[], offset=0.5):
-
-
 def _priorbox(name, bottoms, tops, params, attrs):
     def _to_tuple(d):
         if d is not None:
@@ -327,7 +321,7 @@ def _priorbox(name, bottoms, tops, params, attrs):
     aspect_ratio = _to_tuple(attrs['aspect_ratio'])
     layer.prior_box_param.aspect_ratio.extend(aspect_ratio)
 
-    variance = eval(attrs.get("variance", (0.1, 0.1, 0.2, 0.2)))
+    variance = eval(attrs.get("variance", "(0.1, 0.1, 0.2, 0.2)"))
     assert len(variance) == 4
     layer.prior_box_param.variance.extend(variance)
 
@@ -351,8 +345,8 @@ def _priorbox(name, bottoms, tops, params, attrs):
             layer.prior_box_param.step_h = step[0]
             layer.prior_box_param.step_w = step[1]
 
-    layer.prior_box_param.flip = eval(attrs.get("flip", False))
-    layer.prior_box_param.clip = eval(attrs.get("clip", False))
+    layer.prior_box_param.flip = eval(attrs.get("flip", "False"))
+    layer.prior_box_param.clip = eval(attrs.get("clip", "False"))
     layer.prior_box_param.offset = float(attrs.get("offset", 0.5))
 
     return _link(layer, name, [bottoms[0], "data"], tops)
@@ -386,7 +380,7 @@ def fake(name, bottoms, tops, params, attrs):
         raise ValueError(f"Unknown custom op: {attrs['_op']}")
 
 
-
+# ============= Build ====================
 def build_converters():
     return {
         "data": data,

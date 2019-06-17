@@ -3,14 +3,17 @@
 import caffe
 from mxnet import nd, image
 from mxnet.gluon.data.vision import transforms as T
-from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn, inception_v3
+from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, \
+                               vgg11_bn, \
+                               mobilenet1_0, mobilenet_v2_1_0, \
+                               squeezenet1_0, squeezenet1_1
 
 import os
 import numpy as np
 
 results = {}
-# model_zoo = [resnet18_v1]    # test
-model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn]
+model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn, squeezenet1_0, squeezenet1_1]
+# model_zoo = [mobilenet_v2_1_0]    # test
 
 
 def generate_caffe_model(softmax=False):

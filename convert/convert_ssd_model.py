@@ -44,7 +44,7 @@ def _extract_ssd_attrs(net, anchors=None, bbox_decoder=None, cls_decoder=None):
     for an in anchors:
         attr = {
             "min_size": an._sizes[0],
-            "max_size": an._sizes[1] ** 2 / an._sizes[0],
+            "max_size": an._sizes[1] ** 2 / an._sizes[0],   # https://github.com/dmlc/gluon-cv/blob/master/gluoncv/model_zoo/ssd/anchor.py#L38
             "aspect_ratio": an._ratios,
             "flip": False,
             "clip": an._clip,
