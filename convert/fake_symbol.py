@@ -30,9 +30,9 @@ __author__ = 'YaHei'
 
 
 class Fake(operator.CustomOp):
+    """ Fake symbol """
     def forward(self, is_train, req, in_data, out_data, aux):
         pass
-        # self.assign(out_data, req, in_data)
 
     def backward(self, req, out_grad, in_data, out_data, in_grad, aux):
         pass
@@ -40,6 +40,7 @@ class Fake(operator.CustomOp):
 
 @operator.register("_fake")
 class FakeProp(operator.CustomOpProp):
+    """ Fake symbol """
     def __init__(self, name="", _in_num=1, _out_num=1, **kwargs):
         super(FakeProp, self).__init__()
         if _out_num is None:
@@ -64,4 +65,5 @@ class FakeProp(operator.CustomOpProp):
 
 
 def FakeSymbol(*args, _op, **kwargs):
+    """ Simple API to create a fake symbol. """
     return symbol.Custom(*args, _op=_op, op_type="_fake", **kwargs)

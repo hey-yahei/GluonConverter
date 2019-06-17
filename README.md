@@ -38,7 +38,7 @@ I've tested the ssd models converted from gluoncv on [caffe-ssd](https://github.
 * `BatchNorm` -> `BatchNorm` & `Scale`
 * `Activation` (relu only) -> `ReLU`
 * `Pooling` -> `Pooling` (MAX/AVG)       
-    Note that computations of Pooling layer are so diffirent between Gluon and Caffe which may cause a large error.   
+    Note that computations of Pooling layer are so diffirent between Gluon and Caffe which may cause some errors.   
     But for **Global Pooling** layer, it is consistent.    
 * `elemwise_add` -> `Eltwise` (ADD)
 * `FullyConnected` -> `InnerProduct`

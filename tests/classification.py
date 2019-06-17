@@ -3,7 +3,7 @@
 import caffe
 from mxnet import nd, image
 from mxnet.gluon.data.vision import transforms as T
-from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn
+from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn, inception_v3
 
 import os
 import numpy as np

@@ -24,7 +24,6 @@
 # ============================================================================
 
 from mxnet import symbol
-from mxnet.gluon import nn
 
 import json
 import os
@@ -118,8 +117,10 @@ def _in_place(caffe_net):
 def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
     """
     Convert Gluon model to Caffe.
-    :param net: mxnet.gluon.nn.HybridBlock or mxnet.symbol.Symbol or list of mxnet.symbol.Symbol
+    :param net: mxnet.gluon.nn.HybridBlock
         Gluon net to convert.
+    :param syms: list of list of mxnet.symbol.Symbol
+        (Optionally) if None, computation graph will constructed by net.
     :param input_shape: tuple
         Shape of inputs.
     :param softmax: bool
@@ -232,8 +233,10 @@ def layers_to_caffenet(caffe_net):
 def convert_model(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
     """
     Convert Gluon model to Caffe.
-    :param net: mxnet.gluon.nn.HybridBlock or mxnet.symbol.Symbol or list of mxnet.symbol.Symbol
+    :param net: mxnet.gluon.nn.HybridBlock
         Gluon net to convert.
+    :param syms: list of list of mxnet.symbol.Symbol
+        (Optionally) if None, computation graph will constructed by net.
     :param input_shape: tuple
         Shape of inputs.
     :param softmax: bool
