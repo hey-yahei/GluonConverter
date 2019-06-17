@@ -272,7 +272,9 @@ def softmax(name, bottoms, tops, params, attrs):
     layer = pb2.LayerParameter()
     layer.type = 'Softmax'
 
-    layer.softmax_param.axis = int(attrs['axis'])
+    axis = attrs.get('axis', None)
+    if axis is not None:
+        layer.softmax_param.axis = int(axis)
 
     return _link(layer, name, bottoms, tops)
 
