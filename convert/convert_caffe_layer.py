@@ -200,8 +200,7 @@ def pooling(name, bottoms, tops, params, attrs):
     else:
         layer.pooling_param.stride_h = sh
         layer.pooling_param.stride_w = sw
-    # padding(ceil_mode => False)
-    # assert attrs['pooling_convention'] == 'valid', "Caffe only support Pooling layer with ceil_mode=False"
+    # padding
     if ph == pw:
         layer.pooling_param.pad = ph - 1 if all((attrs['pooling_convention'] == 'valid', sh > 1, ph > 0)) else ph
     else:

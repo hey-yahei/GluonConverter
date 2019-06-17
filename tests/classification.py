@@ -7,13 +7,27 @@ from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, \
                                vgg11_bn, \
                                mobilenet1_0, mobilenet_v2_1_0, \
                                squeezenet1_0, squeezenet1_1
+from gluoncv.model_zoo.mobilenet import MobileNetV2
 
 import os
 import numpy as np
 
 results = {}
-model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, vgg11_bn, squeezenet1_0, squeezenet1_1]
+model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, mobilenet_v2_1_0, vgg11_bn, squeezenet1_0, squeezenet1_1]
 # model_zoo = [mobilenet_v2_1_0]    # test
+
+
+def relu6_to_relu(net):
+    from gluoncv.model_zoo.mobilenet import RELU6
+    import types
+
+    assert isinstance(net, MobileNetV2)
+    def _relu6_to_relu(m):
+        if isinstance(m, RELU6):
+            def _forward(self, F, x):
+                return F.Activation(x, act_type="relu")
+            m.hybrid_forward = types.MethodType(_forward, m)
+    net.apply(_relu6_to_relu)
 
 
 def generate_caffe_model(softmax=False):
@@ -27,6 +41,9 @@ def generate_caffe_model(softmax=False):
     for Net in model_zoo:
         print("Generate caffe model for", Net.__name__)
         net = Net(pretrained=True)
+        if isinstance(net, MobileNetV2):
+            print("ReLU6 is not supported in Caffe -> Replace ReLU6 with ReLU")
+            relu6_to_relu(net)
         text_net, binary_weights = convert_model(net, softmax=softmax)
         save_model(text_net, binary_weights, f"tmp/{Net.__name__}")
 
