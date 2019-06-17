@@ -1,6 +1,13 @@
 # Gluon Converter
 Convert MXNet-Gluon model to Caffe.
 
+## Requirements      
+* python >= 3.6 (**f-string** used in codes, witch is supported after 3.6)
+* mxnet
+* gluoncv
+* numpy
+* caffe(optional)
+
 ## Usage
 1. Construct your gluon model, for example     
     ```python
