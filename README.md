@@ -30,7 +30,24 @@ Convert MXNet-Gluon model to Caffe.
 ### How do I convert a ssd-like model?    
 1. To fetch attributes needed by `PriorBox` and `DetectionOutput` layers, `convert_ssd_model` will extract them from [gluon-net](https://github.com/dmlc/gluon-cv/blob/master/gluoncv/model_zoo/ssd/ssd.py#L18) and [anchors](https://github.com/dmlc/gluon-cv/blob/276ffba742d4cfe51336a76b702647c52ebb6ee0/gluoncv/model_zoo/ssd/anchor.py#L9), [box_decoder](https://github.com/dmlc/gluon-cv/blob/276ffba742d4cfe51336a76b702647c52ebb6ee0/gluoncv/nn/coder.py#L204), [class_decoder](https://github.com/dmlc/gluon-cv/blob/276ffba742d4cfe51336a76b702647c52ebb6ee0/gluoncv/nn/coder.py#L329) in it. 
 2. Before convert symbols to caffemodel, fake symbols for priorbox and detction_output are added into the origin symbols.
-3. Since `step` could not be extract from anchors in gluon-net, it will be setted by default in caffe (step=img_size/layer_size, refer to [caffe-ssd/prior_box_layer.cpp](https://github.com/weiliu89/caffe/blob/ssd/src/caffe/layers/prior_box_layer.cpp#L133-L135)).
+3. Since `step` could not be extract from anchors in gluon-net, it will be setted by default in caffe (step=img_size/layer_size, refer to [caffe-ssd/prior_box_layer.cpp](https://github.com/weiliu89/caffe/blob/ssd/src/caffe/layers/prior_box_layer.cpp#L133-L135)).     
+    You can create an instance of `gluoncv.model_zoo.SSD` and train it as [gluoncv/scripts/detection/ssd/train_ssd.py](https://github.com/dmlc/gluon-cv/blob/master/scripts/detection/ssd/train_ssd.py), for example, **ssd300_mobilenetv2** --      
+    ```python
+    from gluoncv.model_zoo import SSD
+    image_size = 300
+    layer_size = (19, 10, 5, 3, 2, 1)
+    net = SSD(network="mobilenetv2_1.0", 
+          base_size=image_size, 
+          features=['features_linearbottleneck12_elemwise_add0_output',     # FeatureMap: 19x19
+                    'features_linearbottleneck16_batchnorm2_fwd_output'],   # FeatureMap: 10x10
+          num_filters=[256, 256, 128, 128],    # Expand feature extractor with FeatureMaps: 5x5, 3x3, 2x2, 1x1 (stride=2)
+          sizes=[21, 45, 99, 153, 207, 261, 315],
+          ratios=[[1, 2, 0.5]] + [[1, 2, 0.5, 3, 1.0/3]] * 3 + [[1, 2, 0.5]] * 2,
+          steps=[image_size/layer_size for layer_size in layer_size],   # Default setting in DetectionOutput caffe-layer
+          classes=['A', 'B', 'C'],
+          pretrained=True)
+    # ...train as train_ssd.py
+    ```
 
 I've tested the ssd models converted from gluoncv on [caffe-ssd](https://github.com/weiliu89/caffe/tree/ssd) and [ncnn](https://github.com/Tencent/ncnn) and they works well.
 
