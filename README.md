@@ -17,7 +17,7 @@ Convert MXNet-Gluon model to Caffe.
 2. Convert it to caffe NetParamert, for example    
     ```python
     from convert import convert_model
-    text_net, binary_weights = convert_model(net, input_shape=(1,3,224,224), softmax=False, to_bgr=True)
+    text_net, binary_weights = convert_model(net, input_shape=(1,3,224,224), softmax=False, to_bgr=True, merge_bn=True)
     ```      
     For caffe, the order of inputs' channels is often **BGR** but not RGB.      
     **if you want to convert a ssd-like model in [gluoncv](https://github.com/dmlc/gluon-cv), please use `convert_ssd_model` API but not `convert_model`.**
@@ -35,7 +35,7 @@ Convert MXNet-Gluon model to Caffe.
 I've tested the ssd models converted from gluoncv on [caffe-ssd](https://github.com/weiliu89/caffe/tree/ssd) and [ncnn](https://github.com/Tencent/ncnn) and they works well.
 
 ### How to convert MobileNetv2?       
-`ReLU6` is one of components in MobileNetv2, which is implemented with a `clip` symbol with range `[0, 6]`. But caffe does not support `clip`. Therefore, to convert MobileNetv2, converter will replace `clip` symbol with range `[0,6]` with `Activation(relu)`. And of course, some errors will be introduced especially for quantized-models.      
+`ReLU6` is one of components in MobileNetv2, which is implemented with a `clip` symbol with range [0,6]. But caffe does not support `clip`. Therefore, to convert MobileNetv2, converter will replace `clip` symbol with range [0,6] with `Activation(relu)`. And of course, some errors will be introduced especially for quantized-models.      
 However, as I know, some branches of caffe and some platform(such as ncnn) support `ReLU6`, please reset the type of activation layers manually if you want to deploy it to such branches or platforms.
 
 ## Support Layers
