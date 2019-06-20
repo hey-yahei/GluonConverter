@@ -182,11 +182,18 @@ def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=F
                 params[0] = _weights_rgb2bgr(params[0])
             # Collector for tops
             tops = [_clean_name(net, out_name) for out_name in node.list_outputs()]
+            # Get attributes
+            attrs = node.list_attr()
+            # Convert ReLU6 to ReLU
+            if op == 'clip':
+                attrs = node.list_attr()
+                if attrs['a_min'] == '0' and attrs['a_max'] == '6':
+                    op = 'Activation'
+                    attrs = {"act_type": "relu"}
             # Get convert function
             convert_fn = _converter.get(op, None)
             assert convert_fn is not None, f"unknown op: {op}"
             # Convert gluon layer to caffe and add to collector `caffe_net`
-            attrs = node.list_attr()
             layer = convert_fn(_clean_name(net, name), bottoms, tops, params, attrs)
             if op == "BatchNorm":       # BatchNorm is converted into BatchNorm & Scale
                 caffe_net.extend(layer)
