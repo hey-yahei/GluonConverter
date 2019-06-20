@@ -83,7 +83,7 @@ def _find_symbol_by_name(sym, name):
             return s
 
 
-def convert_ssd_model(net, input_shape=(1,3,512,512), to_bgr=False):
+def convert_ssd_model(net, input_shape=(1,3,512,512), to_bgr=False, merge_bn=True):
     """
     Convert SSD-like model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock
@@ -92,6 +92,8 @@ def convert_ssd_model(net, input_shape=(1,3,512,512), to_bgr=False):
         Shape of inputs.
     :param to_bgr: bool
         Convert input_type from RGB to BGR.
+    :param merge_bn: bool
+        Merge BatchNorm and Scale layers to Convolution layers.
     :return: (text_net, binary_weights)
         text_net: caffe_pb2.NetParameter
             Structure of net.
@@ -139,5 +141,5 @@ def convert_ssd_model(net, input_shape=(1,3,512,512), to_bgr=False):
     detection_out = FakeSymbol(box_concat, cls_flatten, pbox_concat,
                                _in_num=3, name="detection_out", _op="DetectionOutput", **detection_out_attrs)
 
-    return convert_model(net, detection_out, input_shape=input_shape, to_bgr=to_bgr)
+    return convert_model(net, detection_out, input_shape=input_shape, to_bgr=to_bgr, merge_bn=merge_bn)
 

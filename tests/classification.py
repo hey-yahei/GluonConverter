@@ -7,17 +7,16 @@ from gluoncv.model_zoo import resnet18_v1, resnet18_v1b, resnet18_v2, \
                                vgg11_bn, \
                                mobilenet1_0, mobilenet_v2_1_0, \
                                squeezenet1_0, squeezenet1_1
-from gluoncv.model_zoo.mobilenet import MobileNetV2
 
 import os
 import numpy as np
 
 results = {}
 model_zoo = [resnet18_v1, resnet18_v1b, resnet18_v2, mobilenet1_0, mobilenet_v2_1_0, vgg11_bn, squeezenet1_0, squeezenet1_1]
-# model_zoo = [mobilenet_v2_1_0]    # test
+# model_zoo = [vgg11_bn]    # test
 
 
-def generate_caffe_model(softmax=False):
+def generate_caffe_model(softmax=False, merge_bn=True):
     import sys
     sys.path.append("..")
     from convert import convert_model, save_model
@@ -28,7 +27,7 @@ def generate_caffe_model(softmax=False):
     for Net in model_zoo:
         print("Generate caffe model for", Net.__name__)
         net = Net(pretrained=True)
-        text_net, binary_weights = convert_model(net, softmax=softmax)
+        text_net, binary_weights = convert_model(net, softmax=softmax, merge_bn=merge_bn)
         save_model(text_net, binary_weights, f"tmp/{Net.__name__}")
 
 
@@ -71,7 +70,8 @@ def test(Net, input_shape=(1,3,224,224), softmax=False):
 
 if __name__ == "__main__":
     softmax_ = True
-    generate_caffe_model(softmax=softmax_)
+    merge_bn_ = True
+    generate_caffe_model(softmax=softmax_, merge_bn=merge_bn_)
 
     for Net in model_zoo:
         test(Net, softmax=softmax_)

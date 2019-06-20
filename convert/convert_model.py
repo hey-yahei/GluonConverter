@@ -30,7 +30,7 @@ import os
 import numpy as np
 from google.protobuf import text_format
 
-from .convert_caffe_layer import build_converters
+from .convert_caffe_layer import build_converters, _as_blob
 try:
     from .caffe_ssd import caffe_pb2 as pb2
 except:
@@ -114,7 +114,59 @@ def _in_place(caffe_net):
                 node.top[i] = renames[t]
 
 
-def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
+def _merge_bn(caffe_net):
+    """ Merge BatchNorm/Scale to Convolution(must be called after _in_place() function.) """
+
+    """ Collect all Convolution/BatchNorm/Scale layers """
+    convs = {}
+    for node in caffe_net:
+        if node.type == "Convolution":
+            conv_bn_scale = convs.setdefault(node.top[0], [None, None, None])
+            conv_bn_scale[0] = node
+        elif node.type == "BatchNorm":
+            conv_bn_scale = convs.setdefault(node.bottom[0], [None, None, None])
+            conv_bn_scale[1] = node
+        elif node.type == "Scale":
+            conv_bn_scale = convs.setdefault(node.bottom[0], [None, None, None])
+            conv_bn_scale[2] = node
+
+    """ Merge bn """
+    for conv, bn, scale in convs.values():
+        if bn is not None and scale is not None and conv is not None:
+            # Get parameters from BatchNorm and Scale layers
+            mean, var, scalef = [np.array(v.data) for v in bn.blobs]
+            scales, shift = [np.array(v.data) for v in scale.blobs]
+            if scalef != 0:
+                scalef = 1. / scalef
+            mean *= scalef
+            var *= scalef
+            rstd = 1. / np.sqrt(var + 1e-5)
+            # Update weight
+            if conv.convolution_param.kernel_size != 0:
+                kh = kw = conv.convolution_param.kernel_size[0]
+            else:
+                kh = conv.convolution_param.kernel_h
+                kw = conv.convolution_param.kernel_w
+            channels = conv.convolution_param.num_output
+            weight = np.array(conv.blobs[0].data).reshape((channels, -1, kh, kw))
+            weight = weight * rstd.reshape((channels,1,1,1)) * scales.reshape((channels,1,1,1))
+            # Update bias
+            if not conv.convolution_param.bias_term:
+                conv.convolution_param.bias_term = True
+                bias = np.zeros(shape=channels)
+            else:
+                bias = np.array(conv.blobs[1].data)
+            bias = (bias - mean) * rstd * scales + shift
+            # Remove the old blobs and set the new ones
+            for _ in range(len(conv.blobs)):
+                conv.blobs.remove(conv.blobs[0])
+            conv.blobs.extend([_as_blob(weight), _as_blob(bias)])
+            # Remove BatchNorm and Scales layers from caffe net
+            del caffe_net[caffe_net.index(bn)]
+            del caffe_net[caffe_net.index(scale)]
+
+
+def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False, merge_bn=True):
     """
     Convert Gluon model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock
@@ -127,6 +179,8 @@ def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=F
         Add softmax for model.
     :param to_bgr: bool
         Convert input_type from RGB to BGR.
+    :param merge_bn: bool
+        Merge BatchNorm and Scale layers to Convolution layers.
     :return: list of caffe_pb2.LayerParameter
         CaffeLayers from model.
     """
@@ -203,6 +257,10 @@ def convert_model_to_layers(net, syms=None, input_shape=(1,3,224,224), softmax=F
     """ Set ReLU & BatchNorm inplace """
     _in_place(caffe_net)
 
+    """ Merge BatchNorm/Scale to Convolution """
+    if merge_bn:
+        _merge_bn(caffe_net)
+
     return caffe_net
 
 
@@ -237,7 +295,7 @@ def layers_to_caffenet(caffe_net):
     return text_net, binary_weights
 
 
-def convert_model(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False):
+def convert_model(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_bgr=False, merge_bn=True):
     """
     Convert Gluon model to Caffe.
     :param net: mxnet.gluon.nn.HybridBlock
@@ -250,13 +308,15 @@ def convert_model(net, syms=None, input_shape=(1,3,224,224), softmax=False, to_b
         Add softmax for model.
     :param to_bgr: bool
         Convert input_type from RGB to BGR.
+    :param merge_bn: bool
+        Merge BatchNorm and Scale layers to Convolution layers.
     :return: (text_net, binary_weights)
         text_net: caffe_pb2.NetParameter
             Structure of net.
         binary_weights: caffe_pb2.NetParameter
             Weights of net.
     """
-    caffe_net = convert_model_to_layers(net, syms, input_shape, softmax, to_bgr)
+    caffe_net = convert_model_to_layers(net, syms, input_shape, softmax, to_bgr, merge_bn)
     return layers_to_caffenet(caffe_net)
 
 
